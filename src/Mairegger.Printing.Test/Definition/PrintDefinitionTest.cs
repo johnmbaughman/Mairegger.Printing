@@ -33,35 +33,53 @@ namespace Mairegger.Printing.Tests.Definition
         }
 
         [Test]
+        public void SetPrintAttributeNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => new PrintDefinition().SetPrintAttribute(null!));
+        }
+
+        [Test]
         public void IsToPrint_CheckSinglePage()
         {
             var pd = new PrintDefinition();
 
             pd.SetPrintAttribute(new PrintOnPageAttribute(PrintAppendixes.Footer, PrintPartDefinitionAttribute.LastPage));
 
-            // do not print on page #1
-            Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, false), Is.False);
+            Assert.Multiple(() =>
+            {
+                // do not print on page #1
+                Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, false), Is.False);
 
-            // but print on last page
-            Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, true), Is.True);
+                // but print on last page
+                Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, true), Is.True);
+            });
         }
 
         [Test]
         public void IsToPrint_ExcludeIsStrongerThanInclude()
         {
             var pd = new PrintDefinition();
-            Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, false), Is.False);
-            Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 2, false), Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, false), Is.False);
+                Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 2, false), Is.False);
+            });
 
             pd.SetPrintAttribute(new PrintOnPageAttribute(PrintAppendixes.Footer, 2));
 
-            Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, false), Is.False);
-            Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 2, false), Is.True);
+            Assert.Multiple(() =>
+            {
+                Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, false), Is.False);
+                Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 2, false), Is.True);
+            });
 
             pd.SetPrintAttribute(new ExcludeFromPageAttribute(PrintAppendixes.Footer, 2));
 
-            Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, false), Is.False);
-            Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 2, false), Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, false), Is.False);
+                Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 2, false), Is.False);
+            });
         }
 
         [Test]
@@ -87,8 +105,11 @@ namespace Mairegger.Printing.Tests.Definition
 
             pd.SetPrintAttribute(new PrintOnPageAttribute(PrintAppendixes.Footer, 2));
 
-            Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, false), Is.False);
-            Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 2, false), Is.True);
+            Assert.Multiple(() =>
+            {
+                Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 1, false), Is.False);
+                Assert.That(pd.IsToPrint(PrintAppendixes.Footer, 2, false), Is.True);
+            });
         }
 
         [Test]
@@ -114,14 +135,6 @@ namespace Mairegger.Printing.Tests.Definition
             pd.SetPrintAttribute(new PrintOnPageAttribute(PrintAppendixes.Footer, 1));
 
             Assert.That(pd.IsDefined(PrintAppendixes.Footer), Is.True);
-        }
-
-        [Test]
-        public void SetPrintAttribute_Null_ThrowsException()
-        {
-            var pd = new PrintDefinition();
-
-            Assert.That(() => pd.SetPrintAttribute(null), Throws.ArgumentNullException);
         }
     }
 }

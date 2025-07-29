@@ -1,11 +1,11 @@
 ﻿// Copyright 2017 Michael Mairegger
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,6 @@ namespace Mairegger.Printing.PrintProcessor
     using System.Windows.Controls;
     using System.Windows.Documents;
     using System.Windows.Media;
-    using JetBrains.Annotations;
     using Mairegger.Printing.Content;
     using Mairegger.Printing.Definition;
     using Mairegger.Printing.Internal;
@@ -34,24 +33,20 @@ namespace Mairegger.Printing.PrintProcessor
     /// </summary>
     public abstract class PrintProcessor : IPrintProcessor
     {
-        private static Action<IPrintDialog> _configurePrintDialog;
+        private static Action<IPrintDialog>? _globalConfigurePrintDialog;
         private string _fileName = string.Empty;
         private IPrintDialog _printDialog;
         private PrintDimension _printDimension = new PrintDimension();
 
         protected PrintProcessor()
         {
-            PrintDialog = new PrintDialogWrapper();
-            _configurePrintDialog?.Invoke(PrintDialog);
+            _printDialog = new PrintDialogWrapper();
+            _globalConfigurePrintDialog?.Invoke(PrintDialog);
 
             PageOrientation = PageOrientation.Portrait;
         }
 
-        public virtual IList<SolidColorBrush> AlternatingRowColors { get; set; } = new[]
-                                                                                   {
-                                                                                       Brushes.Transparent,
-                                                                                       Brushes.LightGray
-                                                                                   };
+        public virtual IList<SolidColorBrush> AlternatingRowColors { get; set; } = [Brushes.Transparent, Brushes.LightGray];
 
         public bool ColorPrintPartsForDebug { get; set; }
 
@@ -85,13 +80,15 @@ namespace Mairegger.Printing.PrintProcessor
             set => _printDimension = value ?? throw new ArgumentNullException(nameof(value));
         }
 
+        private static readonly char[] AdditionalInvalidCharacters = ['.'];
+
         /// <summary>
         ///     Sets the global configuration of the <see cref="IPrintDialog" />. This action is applied before each print.
         /// </summary>
         /// <param name="configuration"></param>
         public static void ConfigurePrintDialog(Action<IPrintDialog> configuration)
         {
-            _configurePrintDialog = configuration;
+            _globalConfigurePrintDialog = configuration;
         }
 
         public static bool PrintDocument(IPrintDialog printDialog, PrintProcessorCollection pp)
@@ -105,14 +102,14 @@ namespace Mairegger.Printing.PrintProcessor
             return true;
         }
 
-        public virtual PrintDocumentBackground GetBackgound()
+        public virtual PrintDocumentBackground GetBackground()
         {
-            throw new NotImplementedException($"{typeof(PrintProcessor)} must implement \"{nameof(GetBackgound)}\" if \"{nameof(PrintAppendixes.Background)}\" is set.");
+            throw new NotImplementedException($"{typeof(PrintProcessor)} must implement \"{nameof(GetBackground)}\" if \"{nameof(PrintAppendixes.Background)}\" is set.");
         }
 
         public virtual IEnumerable<IDirectPrintContent> GetCustomPageContent(int pageNumber)
         {
-            return Enumerable.Empty<IDirectPrintContent>();
+            return [];
         }
 
         public virtual UIElement GetFooter()
@@ -152,7 +149,7 @@ namespace Mairegger.Printing.PrintProcessor
         {
         }
 
-        public void PreviewDocument(IWindowProvider windowsProvider = null)
+        public void PreviewDocument(IWindowProvider? windowsProvider = null)
         {
             PreviewDocument(new PrintProcessorCollection(this), windowsProvider);
         }
@@ -166,6 +163,15 @@ namespace Mairegger.Printing.PrintProcessor
 
         public bool PrintDocument(string printQueueName)
         {
+            if (printQueueName.StartsWith(@"\\", StringComparison.Ordinal))
+            {
+                var printServerName = new string(printQueueName.Substring(2).TakeWhile(c => c != '\\').ToArray());
+
+                using (var printServer = new PrintServer($@"\\{printServerName}"))
+                {
+                    return PrintDocument(printQueueName, printServer);
+                }
+            }
             using (var printServer = new LocalPrintServer())
             {
                 return PrintDocument(printQueueName, printServer);
@@ -191,7 +197,7 @@ namespace Mairegger.Printing.PrintProcessor
             XpsHelper.SaveFixedDocument(fixedDocument, file);
         }
 
-        internal static void PreviewDocument(PrintProcessorCollection ppc, IWindowProvider windowsProvider = null)
+        public static void PreviewDocument(PrintProcessorCollection ppc, IWindowProvider? windowsProvider = null)
         {
             if (!ppc.Any())
             {
@@ -204,18 +210,9 @@ namespace Mairegger.Printing.PrintProcessor
             XpsHelper.ShowFixedDocument(fixedDocument, ppc.FileName, windowsProvider);
         }
 
-        [NotNull]
         internal static string ReplaceInvalidCharsFromFilename(string path)
         {
-            if (path == null)
-            {
-                return string.Empty;
-            }
-
-            var invalidFileNameChars = Path.GetInvalidFileNameChars().Union(new[]
-                                                                            {
-                                                                                '.'
-                                                                            }).ToList();
+            var invalidFileNameChars = Path.GetInvalidFileNameChars().Union(AdditionalInvalidCharacters).ToList();
             return path.Aggregate(
                 new StringBuilder(),
                 (sb, c) =>
@@ -239,28 +236,31 @@ namespace Mairegger.Printing.PrintProcessor
 
         private static FixedDocument CreateDocument(Size pageSize, PrintProcessorCollection p)
         {
-            if (p != null)
+            for (var index = 0; index < p.Count; index++)
             {
-                for (var index = 0; index < p.Count; index++)
+                var printProcessor = p[index];
+
+                if ((index > 0) && p.IndividualPageOrientation)
                 {
-                    var printProcessor = p[index];
-
-                    if ((index > 0) && p.IndividualPageOrientation)
-                    {
-                        if (((pageSize.Width > pageSize.Height) && (printProcessor.PageOrientation == PageOrientation.Portrait)) ||
-                            ((pageSize.Height > pageSize.Width) && (printProcessor.PageOrientation == PageOrientation.Landscape)))
-                        {
-                            pageSize = new Size(pageSize.Height, pageSize.Width);
-                        }
-                    }
-
-                    printProcessor.SetPrintOnAttributes();
-                    printProcessor.Prepare(pageSize);
+                    pageSize = printProcessor.GetOrientatedPageSize(pageSize);
                 }
+
+                printProcessor.SetPrintOnAttributes();
+                printProcessor.Prepare(pageSize);
             }
 
-            var internalPrintProcessor = new InternalPrintProcessor();
-            return internalPrintProcessor.CreateFixedDocument(p);
+            return InternalPrintProcessor.CreateFixedDocument(p);
+        }
+
+        private Size GetOrientatedPageSize(Size pageSize)
+        {
+            if (((pageSize.Width > pageSize.Height) && (PageOrientation == PageOrientation.Portrait)) ||
+                ((pageSize.Height > pageSize.Width) && (PageOrientation == PageOrientation.Landscape)))
+            {
+                pageSize = new Size(pageSize.Height, pageSize.Width);
+            }
+
+            return pageSize;
         }
 
         private void Prepare(Size pageSize)
@@ -268,7 +268,7 @@ namespace Mairegger.Printing.PrintProcessor
             PrintDimension.PrintProcessor = this;
             PrintDimension.PageSize = pageSize;
             PreparePrint();
-            PrintDimension.PositionizeRelative();
+            PrintDimension.PositionRelative();
         }
 
         private void SetPrintOnAttributes()

@@ -1,11 +1,11 @@
 // Copyright 2016 Michael Mairegger
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,7 +14,6 @@
 
 namespace Mairegger.Printing.Tests.Content
 {
-    using System.Diagnostics.CodeAnalysis;
     using System.Drawing.Printing;
     using System.IO;
     using System.Linq;
@@ -31,25 +30,11 @@ namespace Mairegger.Printing.Tests.Content
         [Test]
         public void Ctor()
         {
-            Mock<Printing.PrintProcessor.PrintProcessor>[] m1 =
-            {
-                new Mock<Printing.PrintProcessor.PrintProcessor>(),
-                new Mock<Printing.PrintProcessor.PrintProcessor>(),
-                new Mock<Printing.PrintProcessor.PrintProcessor>(),
-                new Mock<Printing.PrintProcessor.PrintProcessor>()
-            };
+            Mock<Printing.PrintProcessor.PrintProcessor>[] m1 = [new(), new(), new(), new()];
             PrintProcessorCollection pp = new PrintProcessorCollection(m1.Select(i => i.Object), "FileName");
-            CollectionAssert.AreEqual(m1.Select(i => i.Object), pp);
+            Assert.That(pp, Is.EqualTo(m1.Select(i => i.Object)).AsCollection);
 
             Assert.That(pp.FileName, Is.EqualTo("FileName"));
-        }
-
-        [Test]
-        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute", Justification = "OK for UnitTests")]
-        public void Ctor_Null_ThrowsArgumentNullException()
-        {
-            Assert.That(() => new PrintProcessorCollection(null, "FileName"), Throws.ArgumentNullException);
-            Assert.That(() => new PrintProcessorCollection(null), Throws.ArgumentNullException);
         }
 
         [Test]
@@ -58,11 +43,12 @@ namespace Mairegger.Printing.Tests.Content
             var p = new Mock<Printing.PrintProcessor.PrintProcessor>();
             PrintProcessorCollection pp = new PrintProcessorCollection(p.Object);
 
-            Assert.That(pp.FileName, Is.EqualTo(p.Object.FileName));
-
-            CollectionAssert.Contains(pp, p.Object);
-
-            Assert.That(pp.Count, Is.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(pp.FileName, Is.EqualTo(p.Object.FileName));
+                Assert.That(pp, Has.Member(p.Object));
+                Assert.That(pp, Has.Count.EqualTo(1));
+            });
         }
 
         [Test]
@@ -81,15 +67,7 @@ namespace Mairegger.Printing.Tests.Content
             Assert.That(ppcoll.FileName, Is.Empty);
 
             ppcoll.FileName = formattableString;
-            CollectionAssert.DoesNotContain(ppcoll.FileName, Path.GetInvalidFileNameChars());
-        }
-
-        [Test]
-        public void FileName_Null_IsStringEmpty()
-        {
-            var ppcoll = new PrintProcessorCollection(Enumerable.Empty<Printing.PrintProcessor.PrintProcessor>()) { FileName = null };
-
-            Assert.That(ppcoll.FileName, Is.Empty);
+            Assert.That(ppcoll.FileName, Has.No.Member(Path.GetInvalidFileNameChars()));
         }
 
         [Test]
@@ -101,6 +79,20 @@ namespace Mairegger.Printing.Tests.Content
             printProcessor.PreviewDocument(windowProvider.Object);
 
             windowProvider.Verify(i => i.Show(It.IsNotNull<string>(), It.IsNotNull<DocumentViewer>()), Times.Never);
+        }
+
+        [Test]
+        [Apartment(ApartmentState.STA)]
+        public void PrintEverything()
+        {
+            var printDialog = new Mock<IPrintDialog>();
+            var printProcessor = new PrintEverything() { PrintDialog = printDialog.Object };
+
+            var windowProvider = new Mock<IWindowProvider>();
+            Assert.That(printProcessor.PrintDocument(), Is.True);
+            printProcessor.PreviewDocument(windowProvider.Object);
+
+            windowProvider.Verify(i => i.Show(It.IsNotNull<string>(), It.IsNotNull<DocumentViewer>()), Times.Once);
         }
 
         [Test]
@@ -120,8 +112,11 @@ namespace Mairegger.Printing.Tests.Content
         public void PrintDocument_NoPrintProcessor_DoesNotPrint()
         {
             var ppcoll = new PrintProcessorCollection(Enumerable.Empty<Printing.PrintProcessor.PrintProcessor>());
-            Assert.That(ppcoll.PrintDocument(), Is.False);
-            Assert.That(ppcoll.PrintDocument(string.Empty), Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(ppcoll.PrintDocument(), Is.False);
+                Assert.That(ppcoll.PrintDocument(string.Empty), Is.False);
+            });
         }
 
         [Test]
@@ -152,9 +147,12 @@ namespace Mairegger.Printing.Tests.Content
 
             testPrintProcessor.PrintDialog = printDialog.Object;
 
-            Assert.That(printProcessor.PrintDocument(), Is.True);
-            Assert.That(printProcessor.PrintDocument(PrinterSettings.InstalledPrinters[0], new LocalPrintServer()), Is.True);
-            Assert.That(printProcessor.PrintDocument(PrinterSettings.InstalledPrinters[0]), Is.True);
+            Assert.Multiple(() =>
+            {
+                Assert.That(printProcessor.PrintDocument(), Is.True);
+                Assert.That(printProcessor.PrintDocument(PrinterSettings.InstalledPrinters[0], new LocalPrintServer()), Is.True);
+                Assert.That(printProcessor.PrintDocument(PrinterSettings.InstalledPrinters[0]), Is.True);
+            });
         }
     }
 }

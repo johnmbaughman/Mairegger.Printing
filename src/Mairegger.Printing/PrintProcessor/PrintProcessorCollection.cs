@@ -1,11 +1,11 @@
 ﻿// Copyright 2016 Michael Mairegger
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,42 +19,46 @@ namespace Mairegger.Printing.PrintProcessor
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Printing;
-    using JetBrains.Annotations;
 
     public class PrintProcessorCollection : Collection<PrintProcessor>, IPrintProcessorPrinter
     {
         private string _fileName = string.Empty;
 
-        public PrintProcessorCollection([NotNull] PrintProcessor printProcessor)
+        public PrintProcessorCollection(PrintProcessor printProcessor)
             : this(new List<PrintProcessor> { printProcessor })
         {
+            #if NETFRAMEWORK
             if (printProcessor == null)
             {
                 throw new ArgumentNullException(nameof(printProcessor));
             }
+            #else
+            ArgumentNullException.ThrowIfNull(printProcessor);
+            #endif
 
             _fileName = printProcessor.FileName;
         }
 
-        public PrintProcessorCollection([NotNull] IEnumerable<PrintProcessor> coll, string fileName = "")
+        public PrintProcessorCollection(IEnumerable<PrintProcessor> coll, string fileName = "")
             : this(new List<PrintProcessor>(coll), fileName)
         {
         }
 
-        public PrintProcessorCollection([NotNull] IList<PrintProcessor> coll, string fileName = "")
+        public PrintProcessorCollection(IList<PrintProcessor> coll, string fileName = "")
         {
+            #if NETFRAMEWORK
             if (coll == null)
             {
                 throw new ArgumentNullException(nameof(coll));
             }
+            #else
+            ArgumentNullException.ThrowIfNull(coll);
+            #endif
 
             FileName = fileName;
             foreach (var printProcessor in coll)
             {
-                if (printProcessor != null)
-                {
-                    Add(printProcessor);
-                }
+                Add(printProcessor);
             }
         }
 
@@ -84,7 +88,7 @@ namespace Mairegger.Printing.PrintProcessor
         /// <summary>
         ///     Creates the document in order to provide a preview of the document
         /// </summary>
-        public void PreviewDocument(IWindowProvider windowsProvider = null)
+        public void PreviewDocument(IWindowProvider? windowsProvider = null)
         {
             PrintProcessor.PreviewDocument(this, windowsProvider);
         }

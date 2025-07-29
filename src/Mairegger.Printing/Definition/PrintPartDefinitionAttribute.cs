@@ -1,11 +1,11 @@
 // Copyright 2016 Michael Mairegger
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,9 +32,9 @@ namespace Mairegger.Printing.Definition
         public const int LastPage = int.MaxValue;
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        private readonly List<Range<int>> _validPrintRanges = new List<Range<int>>();
+        private readonly List<PageRange> _validPrintRanges = [];
 
-        protected PrintPartDefinitionAttribute(PrintAppendixes printAppendixes, Range<int> pages)
+        protected PrintPartDefinitionAttribute(PrintAppendixes printAppendixes, PageRange pages)
             : this(printAppendixes)
         {
             AddRange(pages);
@@ -48,15 +48,13 @@ namespace Mairegger.Printing.Definition
         protected PrintPartDefinitionAttribute(PrintAppendixes printAppendixes, params int[] definedPages)
         {
             PrintAppendixes = printAppendixes;
-            if (definedPages != null)
-            {
-                var ranges = definedPages.Select(Range.FromPoint).ToArray();
-                AddRange(ranges);
-            }
+
+            var ranges = definedPages.Select(e => PageRange.FromPoint(e)).ToArray();
+            AddRange(ranges);
         }
 
         private PrintPartDefinitionAttribute(PrintAppendixes printAppendixes, int firstPage, int lastPage)
-            : this(printAppendixes, new Range<int>(firstPage, lastPage))
+            : this(printAppendixes, new PageRange(firstPage, lastPage))
         {
         }
 
@@ -72,7 +70,7 @@ namespace Mairegger.Printing.Definition
             return _validPrintRanges.Any(r => r.IsInRange(page));
         }
 
-        private void AddRange(params Range<int>[] pages)
+        private void AddRange(params PageRange[] pages)
         {
             _validPrintRanges.AddRange(pages);
         }

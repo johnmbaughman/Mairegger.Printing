@@ -1,16 +1,19 @@
 ﻿// Copyright 2016 Michael Mairegger
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using System.Globalization;
+using EnumsNET;
 
 namespace Mairegger.Printing.Definition
 {
@@ -21,6 +24,7 @@ namespace Mairegger.Printing.Definition
     using System.Reflection;
     using System.Windows;
     using Mairegger.Printing.PrintProcessor;
+    using Mairegger.Printing.Properties;
 
     /// <summary>
     ///     Provides a class that contains several Printing Dimensions
@@ -53,11 +57,11 @@ namespace Mairegger.Printing.Definition
         {
             Margin = margin;
 
-            var values = Enum.GetValues(typeof(PrintAppendixes)).Cast<PrintAppendixes>();
+            var printAppendixes = Enums.GetValues<PrintAppendixes>();
 
-            foreach (var printAppendixese in values)
+            foreach (var item in printAppendixes)
             {
-                _printPartDimensions.Add(printAppendixese, null);
+                _printPartDimensions.Add(item, null);
             }
         }
 
@@ -90,23 +94,23 @@ namespace Mairegger.Printing.Definition
             }
         }
 
-        internal PrintDefinition InternalPrintDefinition { get; set; }
+        internal PrintDefinition? InternalPrintDefinition { get; set; }
 
-        internal IPrintProcessor PrintProcessor { get; set; }
+        internal IPrintProcessor? PrintProcessor { get; set; }
 
         protected bool UseRelativeColumnPosition { get; set; }
 
         /// <summary>
         /// Sets the height for <paramref name="printAppendix"/> to a specific value
         /// </summary>
-        /// <param name="printAppendix">The <see cref="PrintAppendixes"/> whichs the heigth is set.</param>
+        /// <param name="printAppendix">The <see cref="PrintAppendixes"/> which the height is set.</param>
         /// <param name="value">The height for the item.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is negative.</exception>
         public void SetHeightValue(PrintAppendixes printAppendix, double? value)
         {
             if (value < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(value), value, "Must be a positive number or null");
+                throw new ArgumentOutOfRangeException(nameof(value), value, l10n.PrintDimension_SetHeightValue_Must_be_a_positive_number_or_null);
             }
             if (_printPartDimensions.ContainsKey(printAppendix))
             {
@@ -118,14 +122,18 @@ namespace Mairegger.Printing.Definition
         /// Recalculates the height for <paramref name="printAppendix"/> when the specific <paramref name="condition"/> is met.
         /// </summary>
         /// <param name="condition">The condition when to reset the height for <paramref name="printAppendix"/></param>
-        /// <param name="printAppendix">The <see cref="PrintAppendixes"/> whichs value is reset.</param>
+        /// <param name="printAppendix">The <see cref="PrintAppendixes"/> which value is reset.</param>
         /// <exception cref="ArgumentNullException"><paramref name="condition"/> is null.</exception>
         public void RecalculateHeightValueWhen(Func<bool> condition, PrintAppendixes printAppendix)
         {
+            #if NETFRAMEWORK
             if (condition == null)
             {
                 throw new ArgumentNullException(nameof(condition));
             }
+            #else
+            ArgumentNullException.ThrowIfNull(condition);
+            #endif
             if (condition())
             {
                 SetHeightValue(printAppendix, null);
@@ -134,21 +142,25 @@ namespace Mairegger.Printing.Definition
 
         internal double GetHeightFor(PrintAppendixes printAppendix, int pageNumber, bool isLastPage)
         {
-            if (InternalPrintDefinition.IsToPrint(printAppendix, pageNumber, isLastPage))
+            if (InternalPrintDefinition?.IsToPrint(printAppendix, pageNumber, isLastPage) == true)
             {
                 double? value = _printPartDimensions[printAppendix];
-                if (!value.HasValue)
+                if (!value.HasValue && PrintProcessor != null)
                 {
                     var uiElement = _printPartDimensionsRetrievalDictionary[printAppendix](PrintProcessor);
                     if (uiElement == null)
                     {
-                        throw new ArgumentNullException($"{nameof(PrintProcessor)}.Get{printAppendix}()", $"{typeof(PrintProcessor)} must return a value for \"Get{printAppendix}()\" if \"{printAppendix}\" is set.");
+                        #if NETFRAMEWORK
+                        throw new ArgumentNullException($"{nameof(PrintProcessor)}.Get{printAppendix}()", string.Format(CultureInfo.CurrentCulture, l10n.PrintDimension_GetHeightFor__0__must_return_a_value_for__Get_1_____if___2___is_set_, typeof(PrintProcessor), printAppendix, printAppendix));
+                        #else
+                        throw new ArgumentNullException($"{nameof(PrintProcessor)}.Get{printAppendix}()", string.Format(CultureInfo.CurrentCulture, l10nComposite.PrintDimension_GetHeightFor__0__must_return_a_value_for__Get_1_____if___2___is_set_, typeof(PrintProcessor), printAppendix, printAppendix));
+                        #endif
                     }
                     uiElement.Measure(new Size(double.MaxValue, double.MaxValue));
                     value = uiElement.DesiredSize.Height;
                     _printPartDimensions[printAppendix] = value;
                 }
-                return value.Value;
+                return value ?? 0;
             }
             return 0;
         }
@@ -191,7 +203,7 @@ namespace Mairegger.Printing.Definition
         /// <param name="pageNumber"></param>
         /// <param name="isLastPage"></param>
         /// <returns></returns>
-        internal Range<double> GetRangeFor(PrintAppendixes printAppendix, int pageNumber, bool isLastPage)
+        internal PageRange GetRangeFor(PrintAppendixes printAppendix, int pageNumber, bool isLastPage)
         {
             double fromValue;
             double height;
@@ -219,20 +231,20 @@ namespace Mairegger.Printing.Definition
                     height = GetHeightFor(printAppendix, pageNumber, isLastPage);
                     break;
                 default:
-                    throw new ArgumentException(nameof(printAppendix));
+                    throw new ArgumentException($"Enum value {printAppendix} is not defined on enum {typeof(PrintAppendixes).FullName}", nameof(printAppendix));
             }
-            return new Range<double>(fromValue, fromValue + height);
+            return new PageRange(fromValue, fromValue + height);
         }
 
-        internal Range<double> GetRangeForBodyGrid(int pageNumber, bool isLastPage)
+        internal PageRange GetRangeForBodyGrid(int pageNumber, bool isLastPage)
         {
             var top = GetRangeFor(PrintAppendixes.HeaderDescription, pageNumber, isLastPage).To;
             var bottom = top + GetHeightForBodyGrid(pageNumber, isLastPage);
 
-            return new Range<double>(top, bottom);
+            return new PageRange(top, bottom);
         }
 
-        internal void PositionizeRelative()
+        internal void PositionRelative()
         {
             if (!UseRelativeColumnPosition)
             {
@@ -241,11 +253,11 @@ namespace Mairegger.Printing.Definition
 
             var properties = GetPropertiesWithColumnDimensionAttribute();
 
-            var absoluteWidhts = properties.Where(s => s.Value.DimensionType == ColumnDimensionType.Pixels);
-            var relativeWidhts = properties.Where(s => s.Value.DimensionType == ColumnDimensionType.Star);
+            var absoluteWidths = properties.Where(s => s.Value.DimensionType == ColumnDimensionType.Pixels);
+            var relativeWidths = properties.Where(s => s.Value.DimensionType == ColumnDimensionType.Star);
 
-            var reservedForAbsolute = absoluteWidhts.Sum(w => w.Value.ColumnWidth);
-            var totalPiecesForRelative = relativeWidhts.Sum(w => w.Value.ColumnWidth);
+            var reservedForAbsolute = absoluteWidths.Sum(w => w.Value.ColumnWidth);
+            var totalPiecesForRelative = relativeWidths.Sum(w => w.Value.ColumnWidth);
             var remainingForRelative = PrintablePageSize.Width - reservedForAbsolute;
             var widthPerPiece = remainingForRelative / totalPiecesForRelative;
 

@@ -14,11 +14,13 @@
 
 namespace Mairegger.Printing.Content
 {
+    using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Windows;
 
     /// <inheritdoc />
     /// <summary>
-    ///     A print content that can be positionized freely on the page.
+    ///     A print content that can be positioned freely on the page.
     /// </summary>
     /// <remarks>
     ///     By returning an instance of this class from a
@@ -46,8 +48,15 @@ namespace Mairegger.Printing.Content
     /// </remarks>
     public class DirectPrintContent : IDirectPrintContent
     {
-        public virtual UIElement Content { get; set; }
+        private UIElement? _content;
 
+        public virtual UIElement Content
+        {
+            get => _content ?? throw new InvalidOperationException($"{nameof(Content)} must be set before accessing this property");
+            set => _content = value;
+        }
+
+        [ExcludeFromCodeCoverage]
         public Point Position { get; set; }
     }
 }

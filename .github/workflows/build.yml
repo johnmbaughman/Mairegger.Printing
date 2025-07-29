@@ -1,0 +1,22 @@
+name: Build
+on:
+  push:
+    branches:
+    - '**'
+
+env:
+  buildConfiguration: 'Release'
+  workingDirectory: 'src'
+
+jobs:
+  build-ci:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - uses: ./.github/actions/build-and-test
+      with:
+        buildConfiguration: ${{ env.buildConfiguration }}
+        workingDirectory: ${{ env.workingDirectory }}

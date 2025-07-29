@@ -1,15 +1,16 @@
-﻿<Project Sdk="MSBuild.Sdk.Extras">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFrameworks>net461</TargetFrameworks>
+    <RootNamespace>Mairegger.Printing.Sample</RootNamespace>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <Reference Include="ReachFramework" />
+  </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\Mairegger.Printing\Mairegger.Printing.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="ReachFramework" />
   </ItemGroup>
 
   <ItemGroup>

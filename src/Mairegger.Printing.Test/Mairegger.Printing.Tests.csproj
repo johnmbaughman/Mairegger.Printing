@@ -1,25 +1,34 @@
-﻿<Project Sdk="MSBuild.Sdk.Extras">
-  <PropertyGroup>
-    <TargetFrameworks>net45</TargetFrameworks>
-  </PropertyGroup>
-  
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
-    <PackageReference Include="Moq" Version="4.10.0" />
-    <PackageReference Include="NUnit" Version="3.11.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.11.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NUnit.Analyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="NUnit3TestAdapter">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <Reference Include="System.Printing" Condition="$(TargetFramework.StartsWith('net4'))" />
+    <Reference Include="ReachFramework" Condition="$(TargetFramework.StartsWith('net4'))" />
+    <PackageReference Include="System.Drawing.Common" Condition="!$(TargetFramework.StartsWith('net4'))" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
   
+  <PropertyGroup>
+    <!--otherwise no code coverage files are generated -->
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Mairegger.Printing\Mairegger.Printing.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="ReachFramework" />
-    <Reference Include="System.Printing" />
-  </ItemGroup>
-  
   <ItemGroup>
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>

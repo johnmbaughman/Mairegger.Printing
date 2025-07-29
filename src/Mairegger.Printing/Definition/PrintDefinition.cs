@@ -1,16 +1,18 @@
 ﻿// Copyright 2016 Michael Mairegger
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+using EnumsNET;
 
 namespace Mairegger.Printing.Definition
 {
@@ -21,11 +23,11 @@ namespace Mairegger.Printing.Definition
 
     public class PrintDefinition
     {
-        private readonly PrinOnAttributeHelper _prinOnAttributeHelper = new PrinOnAttributeHelper();
+        private readonly PrintOnAttributeHelper _printOnAttributeHelper = new PrintOnAttributeHelper();
 
         public bool IsDefined(PrintAppendixes value)
         {
-            return _prinOnAttributeHelper.IsDefined(value);
+            return _printOnAttributeHelper.IsDefined(value);
         }
 
         public bool IsToPrint(PrintAppendixes pa, int pageNumber, bool isLastPage)
@@ -35,7 +37,7 @@ namespace Mairegger.Printing.Definition
 
         public void SetPrintAttribute(IPrintPartDefinition printPartDefinition)
         {
-            _prinOnAttributeHelper.AddAttribute(printPartDefinition);
+            _printOnAttributeHelper.AddAttribute(printPartDefinition);
         }
 
         /// <summary>
@@ -49,11 +51,11 @@ namespace Mairegger.Printing.Definition
         /// </returns>
         private PrintPartStatus GetPrintPrintDefinitionForPage(PrintAppendixes pa, int pageNumber)
         {
-            if (!Enum.IsDefined(typeof(PrintAppendixes), pa))
+            if (!Enums.IsDefined(pa))
             {
-                throw new ArgumentException(nameof(pa));
+                throw new ArgumentException($"Enum value {pa} is not defined on enum {typeof(PrintAppendixes).FullName}", nameof(pa));
             }
-            return _prinOnAttributeHelper.IsPrintOnPage(pa, pageNumber);
+            return _printOnAttributeHelper.IsPrintOnPage(pa, pageNumber);
         }
 
         [SuppressMessage("ReSharper", "BitwiseOperatorOnEnumWithoutFlags", Justification = "This is OK, because PrintPartStatus should not have a flag-attribute and the line with & should be a bit-flag")]

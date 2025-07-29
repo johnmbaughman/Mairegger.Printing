@@ -89,14 +89,17 @@ namespace Mairegger.Printing.Tests.Content
 
             var grid = (Grid)icontent.Content;
             var uiElement = (TextBlock)grid.Children[0];
-            Assert.That(uiElement.Text, Is.EqualTo("Test"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(uiElement.Text, Is.EqualTo("Test"));
 
-            Assert.That(uiElement.FontSize, Is.EqualTo(32));
-            Assert.That(grid.Background, Is.EqualTo(Brushes.Bisque));
-            Assert.That(uiElement.FontWeight, Is.EqualTo(FontWeights.ExtraBold));
-            Assert.That(uiElement.HorizontalAlignment, Is.EqualTo(HorizontalAlignment.Right));
-            Assert.That(uiElement.Padding, Is.EqualTo(new Thickness(12)));
-            Assert.That(grid.Margin, Is.EqualTo(new Thickness(24)));
+                Assert.That(uiElement.FontSize, Is.EqualTo(32));
+                Assert.That(grid.Background, Is.EqualTo(Brushes.Bisque));
+                Assert.That(uiElement.FontWeight, Is.EqualTo(FontWeights.ExtraBold));
+                Assert.That(uiElement.HorizontalAlignment, Is.EqualTo(HorizontalAlignment.Right));
+                Assert.That(uiElement.Padding, Is.EqualTo(new Thickness(12)));
+                Assert.That(grid.Margin, Is.EqualTo(new Thickness(24)));
+            });
         }
 
         [Test]
@@ -117,17 +120,13 @@ namespace Mairegger.Printing.Tests.Content
             var grid = (Grid)icontent.Content;
             var uiElement = (TextBlock)grid.Children[0];
 
-            Assert.That(uiElement.FontSize, Is.EqualTo(10));
-            Assert.That(uiElement.FontFamily, Is.EqualTo(new FontFamily("Verdana")));
-            Assert.That(uiElement.HorizontalAlignment, Is.EqualTo(HorizontalAlignment.Right));
+            Assert.Multiple(() =>
+            {
+                Assert.That(uiElement.FontSize, Is.EqualTo(10));
+                Assert.That(uiElement.FontFamily, Is.EqualTo(new FontFamily("Verdana")));
+                Assert.That(uiElement.HorizontalAlignment, Is.EqualTo(HorizontalAlignment.Right));
+            });
 
-        }
-
-        [Test]
-        public void TextLine_Configuration_Null_Throws()
-        {
-
-            Assert.That(() => PrintContent.TextLine("Test", null), Throws.ArgumentNullException);
         }
 
         [Test]

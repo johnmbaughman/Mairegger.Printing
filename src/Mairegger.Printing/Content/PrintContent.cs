@@ -17,7 +17,6 @@ namespace Mairegger.Printing.Content
     using System;
     using System.Windows;
     using System.Windows.Media;
-    using JetBrains.Annotations;
 
     public static class PrintContent
     {
@@ -25,7 +24,7 @@ namespace Mairegger.Printing.Content
         /// Returns a new <see cref="IPrintContent"/> defining a horizontal line.
         /// </summary>
         /// <returns></returns>
-        public static IPrintContent HorizontalLine(double? lineHeight = 1, Thickness margin = new Thickness(), Brush lineColor = null)
+        public static IPrintContent HorizontalLine(double? lineHeight = 1, Thickness margin = new Thickness(), Brush? lineColor = null)
         {
             return new HorizontalLine(lineHeight, margin, lineColor);
         }
@@ -42,19 +41,19 @@ namespace Mairegger.Printing.Content
         /// Returns a line containing a specified <paramref name="text"/>
         /// </summary>
         /// <param name="text">The text to print.</param>
-        /// <param name="fonzSize">The size of the text.</param>
+        /// <param name="fontSize">The size of the text.</param>
         /// <param name="horizontalAlignment">The alignment of the text.</param>
         /// <param name="fontFamily">The font type.</param>
         /// <returns></returns>
-        public static StringLineItem TextLine(string text, double? fonzSize = null, HorizontalAlignment horizontalAlignment = HorizontalAlignment.Left, FontFamily fontFamily = null)
+        public static StringLineItem TextLine(string text, double? fontSize = null, HorizontalAlignment horizontalAlignment = HorizontalAlignment.Left, FontFamily? fontFamily = null)
         {
-            return new StringLineItem(text, fonzSize, horizontalAlignment)
+            return new StringLineItem(text, fontSize, horizontalAlignment)
             {
                 FontFamily = fontFamily
             };
         }
 
-        public static StringLineItem TextLine(string text, [NotNull] StringLineItemConfiguration configuration)
+        public static StringLineItem TextLine(string text, StringLineItemConfiguration configuration)
         {
             return new StringLineItem(text, configuration ?? throw new ArgumentNullException(nameof(configuration)));
         }
